@@ -5,6 +5,14 @@
 // 2026 (UTC) or scheduled for that day; 24 Nov stories are named only in
 // the DATE CHECK footer. The PNG encoder is hand-written (zlib via
 // node:zlib, CRC32 by hand) so two runs produce byte-identical output.
+//
+// Round 3 (26 Nov): rebuilt after viewing the rank 1, 2 and 3 artifacts.
+// 52 numbered stories across 10 regions and 21 fields: black top bar
+// with the counts, giant date masthead, red kicker, region tally strip,
+// field taxonomy line, 6-stat strip, 10-event UTC timeline, 3 drawn
+// lead scenes with tags, sources and a WHY IT MATTERS line, 12 small
+// cards, a numbered pin map and 37 briefs. Region and field tallies are
+// computed from the story data itself, so the printed counts are true.
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as zlib from "node:zlib";
@@ -79,14 +87,16 @@ const GREY: RGB = [90, 90, 86];
 const LIGHTGREY: RGB = [210, 205, 190];
 const NAVY: RGB = [11, 30, 58];
 const REGION: Record<string, RGB> = {
-  "EAST ASIA": [125, 60, 152],
-  OCEANIA: [26, 82, 118],
-  "SOUTH ASIA": [185, 119, 14],
+  "N AMERICA": [146, 43, 33],
+  "LATIN AMERICA": [160, 60, 120],
   EUROPE: [20, 90, 50],
-  AMERICAS: [146, 43, 33],
   "MIDDLE EAST": [147, 81, 22],
   AFRICA: [20, 143, 119],
-  WORLD: [97, 106, 107],
+  "SOUTH ASIA": [185, 119, 14],
+  "EAST ASIA": [125, 60, 152],
+  "SE ASIA": [70, 140, 180],
+  OCEANIA: [26, 82, 118],
+  GLOBAL: [97, 106, 107],
 };
 
 // ---------- canvas ----------
@@ -391,6 +401,15 @@ function insidePoly(px: number, py: number, poly: [number, number][]): boolean {
 // Round 2 (26 Nov): briefs 35-39 added after re-verification against
 // Reuters, Ukrinform, AP, NBC and FIDE reports dated 25 Nov 2026; three
 // more leader stories were checked and DROPPED (see DATE CHECK below).
+// Round 3 (26 Nov): the leads and cards were re-based on the day's
+// biggest verified stories — the USTR tariff determinations (USTR via
+// Reuters), the Kospi crash (Yonhap), the Shenzhou-24 docking reframed
+// from launch to arrival (Xinhua/CMSA), the Ofgem price cap (Reuters),
+// the Gaza strike (Reuters/BBC), the Dhaka wage deal (AFP) and the
+// Bogor gold-mine toll (AP) — and briefs 42-52 were added from Reuters,
+// AP, AFP, PTI, Dawn and ESA reports dated 25 Nov. One story a leader
+// ran was checked and DROPPED: the UN femicide brief was released on
+// Tuesday 24 Nov, not the 25th (see DATE CHECK below).
 type Tag = "REPORTED" | "CONFIRMED" | "ONGOING" | "AHEAD";
 interface Story {
   n: number;
@@ -401,121 +420,150 @@ interface Story {
   sum: string;
   src: string;
   tag: Tag;
+  why?: string;
 }
 const LEADS: Story[] = [
   {
-    n: 1, place: "JIUQUAN, CHINA", field: "SPACE", region: "EAST ASIA",
-    head: "Shenzhou-24 lifts off with China's first foreign astronaut",
-    sum: "A Long March-2F rocket rose from Jiuquan at 00:18 UTC carrying Pakistan's Muhammad Zeeshan Ali beside Tang Hongbo and Wu Yi. Ali is the first Pakistani in orbit and the first foreign visitor to Tiangong station.",
-    src: "Reuters - Xinhua", tag: "CONFIRMED",
+    n: 1, place: "WASHINGTON, USA", field: "TRADE", region: "N AMERICA",
+    head: "US proposes tariffs of up to 20% on 14 economies",
+    sum: "USTR cites structural excess capacity in 14 economies. China faces up to 20%, the EU 15%, India 25% and Vietnam 35%. Hearings open 25 January; nothing is in force yet.",
+    src: "USTR - Reuters", tag: "CONFIRMED",
+    why: "Widest US tariff salvo since spring",
   },
   {
-    n: 2, place: "FLINDERS ISLAND, TASMANIA", field: "BUSHFIRE", region: "OCEANIA",
-    head: "Bushfire emergency: too late to leave on Flinders Island",
-    sum: "Tasmania Fire Service raised the warning to Emergency for Killiecrankie, Leeka and Mount Tanner as a lightning fire burning about 3,000 hectares threatened homes. Residents were told to shelter.",
-    src: "Tas Fire Service - ABC", tag: "ONGOING",
+    n: 2, place: "SEOUL - TOKYO - TAIPEI", field: "MARKETS", region: "EAST ASIA",
+    head: "AI doubts sink Asian chip stocks: Kospi -6.2%",
+    sum: "Kospi ends at 4,697.51, back under 5,000 in a day. SK hynix falls 11.1% and Samsung 9.9%; Taiwan's Taiex drops 4.8%. Foreigners sell 1.95 trillion won in Seoul.",
+    src: "Yonhap - KRX", tag: "REPORTED",
+    why: "Investors doubt the AI boom pays off",
   },
   {
-    n: 3, place: "CANBERRA, AUSTRALIA", field: "ECONOMY", region: "OCEANIA",
-    head: "Australia inflation jumps to 4.9%, a three-year high",
-    sum: "October CPI came in hotter than the 4.8% forecast, with the trimmed mean at 3.8% and Perth at 5.5%. The Reserve Bank meets on 8 December with another rate rise now in view.",
-    src: "ABS - Reuters", tag: "CONFIRMED",
+    n: 3, place: "JIUQUAN, CHINA", field: "SPACE", region: "EAST ASIA",
+    head: "Pakistan's first astronaut docks at China's station",
+    sum: "Shenzhou-24 docked at 03:56 UTC, 3.5 hours after liftoff. Muhammad Zeeshan Ali, 40, a Pakistan Air Force pilot, is the first foreigner aboard Tiangong; he stays about a week.",
+    src: "Xinhua - CMSA", tag: "CONFIRMED",
+    why: "China's station takes a foreign guest",
   },
 ];
 const SMALL: Story[] = [
   {
-    n: 4, place: "SEOUL, SOUTH KOREA", field: "MARKETS", region: "EAST ASIA",
-    head: "AI stocks slide as Asia opens lower",
-    sum: "Seoul's Kospi fell sharply after Wall Street's AI rout.",
-    src: "Yonhap", tag: "REPORTED",
+    n: 4, place: "CANBERRA, AUSTRALIA", field: "ECONOMY", region: "OCEANIA",
+    head: "Australia inflation jumps to 4.9%",
+    sum: "October CPI beats the 4.8% forecast; trimmed mean 3.8%.",
+    src: "ABS - Reuters", tag: "CONFIRMED",
   },
   {
-    n: 5, place: "SEOUL, SOUTH KOREA", field: "TRANSPORT", region: "EAST ASIA",
-    head: "Seoul subway strike called off",
-    sum: "A 04:15 deal shelved 2,212 cuts and promised 500 hires.",
-    src: "Yonhap", tag: "CONFIRMED",
+    n: 5, place: "FLINDERS ISLAND, TASMANIA", field: "ENVIRONMENT", region: "OCEANIA",
+    head: "Bushfire: too late to leave",
+    sum: "Emergency warning for Killiecrankie as 3,000 ha burn.",
+    src: "Tas Fire Service - ABC", tag: "ONGOING",
   },
   {
-    n: 6, place: "TOKYO, JAPAN", field: "POLITICS", region: "EAST ASIA",
-    head: "Takaichi faces censure motion",
-    sum: "Six parties moved to censure minister Seki over fundraising.",
-    src: "Nikkei Asia", tag: "ONGOING",
-  },
-  {
-    n: 7, place: "HONIARA, SOLOMON ISLANDS", field: "DIPLOMACY", region: "OCEANIA",
-    head: "Australia-Solomons sign security pact",
+    n: 6, place: "HONIARA, SOLOMON ISLANDS", field: "DIPLOMACY", region: "OCEANIA",
+    head: "Solomons sign security pact",
     sum: "Canberra becomes defence partner of choice.",
     src: "Reuters", tag: "CONFIRMED",
   },
   {
-    n: 8, place: "BRUSSELS, BELGIUM", field: "SUMMIT", region: "EUROPE",
-    head: "EU-Western Balkans summit opens",
-    sum: "Costa and von der Leyen host six partners in Brussels.",
-    src: "European Council", tag: "AHEAD",
+    n: 7, place: "SEOUL, SOUTH KOREA", field: "TRANSPORT", region: "EAST ASIA",
+    head: "Seoul subway strike called off",
+    sum: "A 04:15 deal shelved 2,212 cuts, promised 500 hires.",
+    src: "Yonhap", tag: "CONFIRMED",
   },
   {
-    n: 9, place: "MOSCOW, RUSSIA", field: "DIPLOMACY", region: "EUROPE",
-    head: "Putin to hold talks with Brunei Sultan",
-    sum: "Talks focus on dialogue and economic ties.",
-    src: "Kremlin", tag: "AHEAD",
+    n: 8, place: "TOKYO, JAPAN", field: "POLITICS", region: "EAST ASIA",
+    head: "Takaichi faces censure motion",
+    sum: "Six parties move to censure minister Seki.",
+    src: "Nikkei Asia", tag: "ONGOING",
   },
   {
-    n: 10, place: "CANBERRA, AUSTRALIA", field: "RIGHTS", region: "OCEANIA",
-    head: "Australia apologises to veterans",
-    sum: "Formal apology to LGBTQ veterans for decades of bias.",
+    n: 9, place: "LONDON, UK", field: "ENERGY", region: "EUROPE",
+    head: "UK energy price cap to rise 26%",
+    sum: "Ofgem: typical bill 1,723 to 2,166 pounds a year.",
+    src: "Ofgem - Reuters", tag: "CONFIRMED",
+  },
+  {
+    n: 10, place: "KYIV, UKRAINE", field: "WAR", region: "EUROPE",
+    head: "Ukraine downs 88 of 112 drones",
+    sum: "Air Force: 88 of 112 drones downed in the night raid.",
+    src: "Ukrinform", tag: "REPORTED",
+  },
+  {
+    n: 11, place: "GAZA CITY", field: "WAR", region: "MIDDLE EAST",
+    head: "Hamas security chief killed",
+    sum: "Abu al-Aouf, wife and 2 daughters die in Shati camp.",
+    src: "Reuters - BBC", tag: "REPORTED",
+  },
+  {
+    n: 12, place: "GIZA, EGYPT", field: "DISASTER", region: "AFRICA",
+    head: "Fuel tanker fire kills 31",
+    sum: "Tanker overturned and exploded on a Cairo ring road.",
+    src: "AP", tag: "REPORTED",
+  },
+  {
+    n: 13, place: "DHAKA, BANGLADESH", field: "LABOUR", region: "SOUTH ASIA",
+    head: "Garment wage rises 36%",
+    sum: "Wage board: 12,500 to 17,500 taka a month, from Dec.",
+    src: "AFP - Al Jazeera", tag: "REPORTED",
+  },
+  {
+    n: 14, place: "BOGOR, INDONESIA", field: "DISASTER", region: "SE ASIA",
+    head: "Gold mine flood: 9 dead",
+    sum: "Rescuers pull bodies from the 100-metre flooded pit.",
+    src: "AP", tag: "REPORTED",
+  },
+  {
+    n: 15, place: "CAPE TOWN, SOUTH AFRICA", field: "JUSTICE", region: "AFRICA",
+    head: "Court lifts Farmgate threat",
+    sum: "Judges void the 2022 panel report on Ramaphosa.",
     src: "Reuters", tag: "CONFIRMED",
   },
-  {
-    n: 11, place: "SHANGHAI, CHINA", field: "POLITICS", region: "EAST ASIA",
-    head: "Shanghai pledges loyalty",
-    sum: "City vows to see the Chen Jining inquiry through.",
-    src: "Reuters", tag: "REPORTED",
-  },
-  {
-    n: 12, place: "STRASBOURG, FRANCE", field: "MIGRATION", region: "EUROPE",
-    head: "EU briefs on migration and border funds",
-    sum: "MEPs brief press at 11:00 CET on migration and border funds.",
-    src: "European Parliament", tag: "AHEAD",
-  },
-  {
-    n: 13, place: "WASHINGTON, USA", field: "ECONOMY", region: "AMERICAS",
-    head: "US data pile due at 13:30 UTC",
-    sum: "Last big data before the Fed's December meeting.",
-    src: "BEA - Labor Dept", tag: "AHEAD",
-  },
 ];
-interface Brief { n: number; text: string; }
+interface Brief { n: number; text: string; region: string; field: string; }
 const BRIEFS: Brief[] = [
-  { n: 14, text: "16 Days begins - UN Women" },
-  { n: 15, text: "Trump meets Rutte - White House" },
-  { n: 16, text: "Japan service prices, 36-yr high" },
-  { n: 17, text: "Dollar steadies; gold $3,544" },
-  { n: 18, text: "Houthis 60 km from Aden" },
-  { n: 19, text: "Sarkozy Libya-case trial - BBC" },
-  { n: 20, text: "Korea crypto bill, 20% cap - FSC" },
-  { n: 21, text: "Kolkata infant certificate row" },
-  { n: 22, text: "Jharkhand chief justice - Hindu" },
-  { n: 23, text: "Samajwadi names 5 UP candidates" },
-  { n: 24, text: "UN business forum, Geneva - UN" },
-  { n: 25, text: "Murder-trial jury retires - ABC" },
-  { n: 26, text: "Netball stars oppose rule change" },
-  { n: 27, text: "Cekaj v Siniakov, game two - ABC" },
-  { n: 28, text: "Tigray opens 16 Days - TIMRRA" },
-  { n: 29, text: "Germany-Africa summit ends" },
-  { n: 30, text: "Spain snap-poll, final week" },
-  { n: 31, text: "PSG host Roma, Champions League" },
-  { n: 32, text: "Davis Cup: Italy v S Korea - ITF" },
-  { n: 33, text: "Fed Beige Book released - Fed" },
-  { n: 34, text: "Kutryk's daughter, from the ISS" },
-  { n: 35, text: "US tariffs on 14 partners - USTR" },
-  { n: 36, text: "Kyiv downs 88 of 112 drones" },
-  { n: 37, text: "Cairo tanker fire kills 31 - AP" },
-  { n: 38, text: "Macy's parade moved to Saturday" },
-  { n: 39, text: "Gukesh draws game two - FIDE" },
+  { n: 16, text: "16 Days begins - UN Women", region: "GLOBAL", field: "RIGHTS" },
+  { n: 17, text: "Trump meets Rutte - White House", region: "N AMERICA", field: "DIPLOMACY" },
+  { n: 18, text: "Japan service prices, 36-yr high", region: "EAST ASIA", field: "ECONOMY" },
+  { n: 19, text: "Dollar steadies; gold $3,544", region: "GLOBAL", field: "MARKETS" },
+  { n: 20, text: "Houthis 60 km from Aden", region: "MIDDLE EAST", field: "WAR" },
+  { n: 21, text: "Sarkozy Libya-case trial - BBC", region: "EUROPE", field: "JUSTICE" },
+  { n: 22, text: "Korea crypto bill, 20% cap - FSC", region: "EAST ASIA", field: "TECH" },
+  { n: 23, text: "Kolkata infant certificate row", region: "SOUTH ASIA", field: "RIGHTS" },
+  { n: 24, text: "Jharkhand chief justice - Hindu", region: "SOUTH ASIA", field: "JUSTICE" },
+  { n: 25, text: "Samajwadi names 5 UP candidates", region: "SOUTH ASIA", field: "POLITICS" },
+  { n: 26, text: "UN business forum, Geneva - UN", region: "EUROPE", field: "BUSINESS" },
+  { n: 27, text: "Murder-trial jury retires - ABC", region: "OCEANIA", field: "JUSTICE" },
+  { n: 28, text: "Netball stars oppose rule change", region: "OCEANIA", field: "SPORT" },
+  { n: 29, text: "Tigray opens 16 Days - TIMRRA", region: "AFRICA", field: "RIGHTS" },
+  { n: 30, text: "Germany-Africa summit ends", region: "AFRICA", field: "DIPLOMACY" },
+  { n: 31, text: "Spain snap-poll, final week", region: "EUROPE", field: "POLITICS" },
+  { n: 32, text: "PSG host Roma, Champions League", region: "EUROPE", field: "SPORT" },
+  { n: 33, text: "Davis Cup: Italy v S Korea - ITF", region: "EUROPE", field: "SPORT" },
+  { n: 34, text: "Fed Beige Book released - Fed", region: "N AMERICA", field: "ECONOMY" },
+  { n: 35, text: "Kutryk's daughter, from the ISS", region: "N AMERICA", field: "SPACE" },
+  { n: 36, text: "Macy's parade moved to Saturday", region: "N AMERICA", field: "SOCIETY" },
+  { n: 37, text: "Gukesh draws game two - FIDE", region: "EUROPE", field: "SPORT" },
+  { n: 38, text: "EU-Western Balkans summit opens", region: "EUROPE", field: "DIPLOMACY" },
+  { n: 39, text: "Putin-Brunei talks - Kremlin", region: "EUROPE", field: "DIPLOMACY" },
+  { n: 40, text: "EU migration briefing at 11:00", region: "EUROPE", field: "MIGRATION" },
+  { n: 41, text: "US data pile due at 13:30 UTC", region: "N AMERICA", field: "ECONOMY" },
+  { n: 42, text: "N Korea expels Swiss envoy - KCNA", region: "EAST ASIA", field: "DIPLOMACY" },
+  { n: 43, text: "Brussels - EU 50bn quantum fund", region: "EUROPE", field: "TECH" },
+  { n: 44, text: "Eurostar strike cancels trains", region: "EUROPE", field: "TRANSPORT" },
+  { n: 45, text: "Karachi collapse: 3 dead, 14 hurt", region: "SOUTH ASIA", field: "DISASTER" },
+  { n: 46, text: "Top court voids Gandhi check - PTI", region: "SOUTH ASIA", field: "JUSTICE" },
+  { n: 47, text: "Ras Tanura - 4 drones downed", region: "MIDDLE EAST", field: "WAR" },
+  { n: 48, text: "Hera shows DART crater - ESA", region: "GLOBAL", field: "SPACE" },
+  { n: 49, text: "Cartagena siege ends, all freed", region: "LATIN AMERICA", field: "CRIME" },
+  { n: 50, text: "Mexico protests US extradition", region: "LATIN AMERICA", field: "DIPLOMACY" },
+  { n: 51, text: "Parana storms: 6 dead, 40 towns", region: "LATIN AMERICA", field: "DISASTER" },
+  { n: 52, text: "Warsaw plans border no-fly zone", region: "EUROPE", field: "SECURITY" },
 ];
 const TIMELINE: [string, string][] = [
-  ["00:18", "Shenzhou-24"],
+  ["00:18", "Liftoff"],
   ["00:30", "Aus CPI out"],
+  ["03:56", "Shenzhou docks"],
+  ["06:35", "Crew enters"],
   ["07:00", "Kyiv drones"],
   ["11:00", "EU migration"],
   ["13:30", "US data pile"],
@@ -523,23 +571,44 @@ const TIMELINE: [string, string][] = [
   ["19:00", "Beige Book"],
   ["21:00", "Trump-Rutte"],
 ];
-const NUMBERS: [string, string][] = [
-  ["4.9%", "Australia Oct CPI, a three-year high"],
-  ["88 of 112", "drones downed over Kyiv"],
-  ["31", "killed in the Cairo tanker fire"],
-  ["3,000 ha", "burning on Flinders Island"],
-  ["2,212", "Seoul Metro jobs saved from cuts"],
+const STATS: [string, string][] = [
+  ["20%", "top US tariff proposed on China"],
+  ["-6.2%", "Kospi close in the AI sell-off"],
+  ["+26%", "UK energy price cap from 1 Jan"],
+  ["31", "killed in Cairo tanker fire"],
+  ["9", "dead in Java gold mine flood"],
+  ["1st", "foreigner aboard Tiangong"],
 ];
-const REGIONS: [string, number][] = [
-  ["EAST ASIA", 7], ["OCEANIA", 6], ["SOUTH ASIA", 3], ["EUROPE", 10],
-  ["AMERICAS", 5], ["MIDDLE EAST", 1], ["AFRICA", 3], ["WORLD", 4],
+// Tallies computed from the data, so the printed counts cannot lie.
+const ALL_STORIES: { region: string; field: string }[] = [...LEADS, ...SMALL, ...BRIEFS];
+const REGION_ORDER = [
+  "N AMERICA", "LATIN AMERICA", "EUROPE", "MIDDLE EAST", "AFRICA",
+  "SOUTH ASIA", "EAST ASIA", "SE ASIA", "OCEANIA", "GLOBAL",
 ];
+const REGION_SHORT: Record<string, string> = {
+  "N AMERICA": "N AMERICA", "LATIN AMERICA": "LAT AM", EUROPE: "EUROPE",
+  "MIDDLE EAST": "MID EAST", AFRICA: "AFRICA", "SOUTH ASIA": "S ASIA",
+  "EAST ASIA": "E ASIA", "SE ASIA": "SE ASIA", OCEANIA: "OCEANIA", GLOBAL: "GLOBAL",
+};
+const REGIONS: [string, number][] = REGION_ORDER.map((name) => [
+  name,
+  ALL_STORIES.filter((s) => s.region === name).length,
+]);
+const FIELD_TALLY = new Map<string, number>();
+for (const s of ALL_STORIES) FIELD_TALLY.set(s.field, (FIELD_TALLY.get(s.field) ?? 0) + 1);
+const FIELD_LIST = [...FIELD_TALLY.entries()].sort(
+  (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)
+);
+const FIELDS_LINE =
+  `${FIELD_LIST.length} FIELDS - ` +
+  FIELD_LIST.slice(0, 12).map(([f, c]) => `${f} ${c}`).join(" - ") +
+  ` - ${FIELD_LIST.length - 12} MORE AT 1 EACH`;
 const DATE_CHECK =
-  "DATE CHECK - Left out: 24 November stories - COP31 closes with no deal; Houthi drone hits Riyadh tower; Huawei guilty in US trade-secrets trial; Nikkei +3.9% to 58,644; Zaporizhzhia flats strike, 2 dead; CAS gives AFCON title to Senegal. Also checked and left out: EU budget summit (leaders sat 26 Nov; 25 Nov was only the preview); a Sydney 43.9C heat claim (the Bureau recorded 23C); a Nepal runway scare (no dated source found).";
+  "DATE CHECK - Left out as earlier news: COP31 closes with no deal (24 Nov); Houthi drone hits Riyadh tower (24 Nov); Huawei guilty in US trade-secrets trial (24 Nov); Nikkei +3.9% (24 Nov); Zaporizhzhia flats strike (24 Nov); CAS gives AFCON title to Senegal (24 Nov); UN femicide brief, 47,000 women killed (released Tue 24 Nov). Also checked and left out: EU budget summit (leaders sat 26 Nov; the 25th was only the preview); a Sydney 43.9C heat claim (Bureau recorded 23C); a Nepal runway scare (no dated source).";
+const DATE_LINE =
+  "Every story happened or was first reported on Wednesday 25 November 2026 (UTC). The drawings are original.";
 const SOURCES =
-  "Sources: Reuters - Ukrinform - AP - NBC - USTR - Yonhap - ABC News - Nikkei Asia - The Hindu - European Council - Kremlin - European Parliament - ABS - UN Women - BBC - France 24 - Federal Reserve - UEFA - ITF - FIDE - SpaceQ";
-const FOOTNOTE =
-  "Every story dated Wednesday 25 November 2026 (UTC). Illustrations are drawings, not photographs.";
+  "Sources: USTR, Reuters, Yonhap, Xinhua, CMSA, ABS, ABC, Tasmania Fire Service, Ukrinform, BBC, AP, AFP, Al Jazeera, Dawn, PTI, Ofgem, European Council, Kremlin, European Parliament, UN Women, The Hindu, FIDE, ITF, UEFA, Federal Reserve, ESA, KCNA, Eurostar";
 
 // ---------- illustrations (all drawn with shapes; no images) ----------
 function drawRocketScene(cv: Canvas, x: number, y: number, w: number, h: number) {
@@ -641,7 +710,101 @@ function drawChartScene(cv: Canvas, x: number, y: number, w: number, h: number) 
   drawText(cv, bx0 + (bw + gap) * 2 + 4, base + 6, 1, [90, 90, 86], "AUG");
   drawText(cv, bx0 + (bw + gap) * 4 + 4, base + 6, 1, [90, 90, 86], "OCT");
 }
-// Small 22x22 icons for the ten small cards.
+// Round 3 lead scene 1: a container ship under a port crane (tariffs).
+function drawShipScene(cv: Canvas, x: number, y: number, w: number, h: number) {
+  // Sky and sea.
+  cv.rect(x, y, w, Math.floor(h * 0.62), [234, 242, 248]);
+  cv.rect(x, y + Math.floor(h * 0.62), w, h - Math.floor(h * 0.62), [26, 82, 118]);
+  cv.circle(x + w - 34, y + 22, 12, [241, 196, 15]);
+  // Container stacks on deck (kept right of the number badge).
+  const cols: RGB[] = [[163, 18, 18], [20, 90, 50], [185, 119, 14], [26, 82, 118], [125, 60, 152], [163, 18, 18]];
+  const cw = 34;
+  const chh = 13;
+  const deckY = y + 84;
+  for (let i = 0; i < 6; i++) {
+    const bx = x + 44 + i * (cw + 3);
+    const stack = i % 3 === 0 ? 3 : 2;
+    for (let j = 0; j < stack; j++) {
+      cv.rect(bx, deckY - (j + 1) * (chh + 2), cw, chh, cols[(i + j) % cols.length]);
+    }
+  }
+  drawText(cv, x + 48, y + deckY - 3 * (chh + 2) + 3, 1, WHITE, "CHINA", true);
+  // Hull with an angled bow.
+  cv.rect(x + 34, deckY, w - 90, 15, [11, 30, 58]);
+  cv.triangle(x + w - 56, deckY, x + w - 26, deckY + 7, x + w - 56, deckY + 15, [11, 30, 58]);
+  cv.hline(x + 34, deckY + 15, w - 90, [163, 18, 18]);
+  cv.hline(x + 34, deckY + 16, w - 90, [163, 18, 18]);
+  // Port crane on the right.
+  cv.rect(x + w - 44, y + 8, 5, deckY - y - 8, [60, 60, 60]);
+  cv.rect(x + 150, y + 8, w - 150 - 39, 5, [60, 60, 60]);
+  cv.vline(x + 248, y + 13, 22, [60, 60, 60]);
+  cv.rect(x + 234, y + 35, 30, 13, [185, 119, 14]);
+  // Tariff tag on the sea.
+  cv.rect(x + w - 76, y + h - 17, 68, 13, [163, 18, 18]);
+  drawText(cv, x + w - 72, y + h - 14, 1, WHITE, "UP TO 20%", true);
+}
+// Round 3 lead scene 2: a falling red line on a dark grid (Kospi crash).
+function drawCrashScene(cv: Canvas, x: number, y: number, w: number, h: number) {
+  cv.rect(x, y, w, h, [11, 30, 58]);
+  for (let gx = x + 20; gx < x + w - 8; gx += 26) cv.vline(gx, y + 6, h - 12, [28, 63, 102]);
+  for (let gy = y + 18; gy < y + h - 8; gy += 22) cv.hline(x + 8, gy, w - 16, [28, 63, 102]);
+  drawText(cv, x + 44, y + 8, 1, WHITE, "KOSPI 4,697.51", true);
+  drawText(cv, x + w - 122, y + 8, 3, [255, 90, 80], "-6.2%", true);
+  // The falling line, with one small bounce.
+  const pts: [number, number][] = [
+    [x + 18, y + 34], [x + 74, y + 52], [x + 128, y + 46],
+    [x + 182, y + 76], [x + 236, y + 92], [x + w - 26, y + 106],
+  ];
+  for (let i = 0; i < pts.length - 1; i++) {
+    cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], [255, 90, 80]);
+    cv.line(pts[i][0], pts[i][1] + 1, pts[i + 1][0], pts[i + 1][1] + 1, [255, 90, 80]);
+  }
+  for (const [px, py] of pts) cv.circle(px, py, 3, [255, 90, 80]);
+  // Worst-hit chip stocks.
+  cv.rect(x + 14, y + h - 30, 8, 10, [255, 90, 80]);
+  drawText(cv, x + 28, y + h - 29, 1, WHITE, "SK HYNIX -11.1%", true);
+  cv.rect(x + 14, y + h - 16, 8, 10, [255, 90, 80]);
+  drawText(cv, x + 28, y + h - 15, 1, WHITE, "SAMSUNG -9.9%", true);
+}
+// Round 3 lead scene 3: a space station over the Earth (Shenzhou-24).
+function drawStationScene(cv: Canvas, x: number, y: number, w: number, h: number) {
+  cv.rect(x, y, w, h, [5, 10, 25]);
+  for (let i = 0; i < 40; i++) {
+    const sx = x + Math.floor(rnd() * w);
+    const sy = y + Math.floor(rnd() * h * 0.6);
+    cv.rect(sx, sy, 2, 2, WHITE);
+  }
+  // Earth arc at the bottom.
+  cv.circle(x + Math.floor(w * 0.5), y + h + 138, 172, [46, 134, 193]);
+  cv.ellipse(x + Math.floor(w * 0.3), y + h - 20, 30, 10, [39, 174, 96]);
+  cv.ellipse(x + Math.floor(w * 0.7), y + h - 13, 22, 8, [39, 174, 96]);
+  const cx = x + Math.floor(w * 0.5);
+  const cy = y + 56;
+  // Truss and solar wings.
+  cv.rect(cx - 124, cy - 1, 248, 3, [180, 180, 180]);
+  for (const side of [-1, 1]) {
+    for (let p = 0; p < 3; p++) {
+      const px = side === -1 ? cx - 122 + p * 21 : cx + 62 + p * 21;
+      cv.rect(px, cy - 15, 19, 30, [26, 82, 118]);
+      cv.vline(px + 9, cy - 15, 30, [135, 206, 250]);
+      cv.hline(px, cy, 19, [135, 206, 250]);
+    }
+  }
+  // Core module with two small flags (Pakistan green, China red).
+  cv.rect(cx - 48, cy - 10, 96, 20, WHITE);
+  cv.rect(cx - 48, cy - 10, 96, 3, [200, 200, 200]);
+  cv.rect(cx - 34, cy - 4, 13, 9, [20, 120, 60]);
+  cv.rect(cx + 21, cy - 4, 13, 9, [200, 30, 30]);
+  cv.circle(cx, cy, 4, [90, 90, 86]);
+  // Docked capsule at the front port.
+  cv.circle(cx + 58, cy, 9, [220, 220, 220]);
+  cv.triangle(cx + 64, cy - 7, cx + 64, cy + 7, cx + 80, cy, [163, 18, 18]);
+  // A small dish.
+  cv.circle(cx - 58, cy - 16, 6, [220, 220, 220]);
+  cv.vline(cx - 58, cy - 10, 8, [180, 180, 180]);
+  drawText(cv, x + 10, y + h - 14, 1, WHITE, "TIANGONG STATION", true);
+}
+// Small 22x22 icons for the twelve small cards.
 function drawIcon(cv: Canvas, x: number, y: number, kind: string, c: RGB) {
   if (kind === "chart") {
     cv.rect(x + 2, y + 12, 4, 8, c);
@@ -688,13 +851,33 @@ function drawIcon(cv: Canvas, x: number, y: number, kind: string, c: RGB) {
       cv.circle(Math.round(x + 11 + 8 * Math.cos(a)), Math.round(y + 11 + 8 * Math.sin(a)), 2, c);
     }
     cv.circle(x + 11, y + 11, 2, c);
+  } else if (kind === "flame") {
+    cv.triangle(x + 11, y + 1, x + 3, y + 16, x + 19, y + 16, c);
+    cv.triangle(x + 11, y + 8, x + 7, y + 16, x + 15, y + 16, WHITE);
+    cv.rect(x + 4, y + 16, 14, 4, c);
+  } else if (kind === "bolt") {
+    cv.triangle(x + 14, y + 1, x + 6, y + 13, x + 12, y + 13, c);
+    cv.triangle(x + 12, y + 10, x + 17, y + 10, x + 8, y + 21, c);
+  } else if (kind === "burst") {
+    for (let i = 0; i < 8; i++) {
+      const a = (i * Math.PI) / 4;
+      const a1 = a - 0.35;
+      const a2 = a + 0.35;
+      cv.triangle(
+        x + 11 + Math.round(4 * Math.cos(a1)), y + 11 + Math.round(4 * Math.sin(a1)),
+        x + 11 + Math.round(4 * Math.cos(a2)), y + 11 + Math.round(4 * Math.sin(a2)),
+        x + 11 + Math.round(10 * Math.cos(a)), y + 11 + Math.round(10 * Math.sin(a)), c
+      );
+    }
+    cv.circle(x + 11, y + 11, 3, c);
   } else {
     drawText(cv, x + 5, y + 3, 2, c, "$", true);
   }
 }
 const ICONS: Record<number, string> = {
-  4: "chart", 5: "train", 6: "parliament", 7: "flag", 8: "summit",
-  9: "talks", 10: "ribbon", 11: "tower", 12: "stars", 13: "dollar",
+  4: "chart", 5: "flame", 6: "flag", 7: "train", 8: "parliament",
+  9: "bolt", 10: "stars", 11: "burst", 12: "flame", 13: "dollar",
+  14: "tower", 15: "parliament",
 };
 
 // ---------- dotted world map ----------
@@ -710,27 +893,36 @@ const CONTINENTS: [number, number][][] = [
   [[95, 5], [100, 0], [105, -5], [110, -7], [115, -8], [120, -9], [125, -8], [130, -3], [135, -4], [140, -8]],
   [[-5, 50], [-2, 53], [-3, 58], [0, 52], [-2, 50]],
 ];
-// [story, lon, lat, nudgeX, nudgeY, region] — numbered pins for stories 1-13.
+// [story, lon, lat, nudgeX, nudgeY, region] — numbered pins for stories 1-15.
 const PINS: [number, number, number, number, number, string][] = [
-  [1, 100, 40, -8, -12, "EAST ASIA"], [2, 148, -40, 0, 0, "OCEANIA"],
-  [3, 149, -35, 0, 0, "OCEANIA"], [4, 127, 37, 0, 0, "EAST ASIA"],
-  [5, 127, 37, -16, -12, "EAST ASIA"], [6, 139, 36, 14, -12, "EAST ASIA"],
-  [7, 160, -9, 0, 0, "OCEANIA"], [8, 4, 51, 0, 0, "EUROPE"],
-  [9, 37, 56, 0, 0, "EUROPE"], [10, 149, -35, 14, 10, "OCEANIA"],
-  [11, 121, 31, -16, 10, "EAST ASIA"], [12, 7.7, 48.6, 0, 0, "EUROPE"],
-  [13, -77, 39, 0, 0, "AMERICAS"],
+  [1, -77, 38.9, 0, 0, "N AMERICA"], [2, 127, 37.5, 0, 0, "EAST ASIA"],
+  [3, 100.1, 40.6, -10, -8, "EAST ASIA"], [4, 149.1, -35.3, -12, -10, "OCEANIA"],
+  [5, 148, -40.1, 8, 6, "OCEANIA"], [6, 160, -9.4, 0, 0, "OCEANIA"],
+  [7, 127, 37.5, -16, 12, "EAST ASIA"], [8, 139.7, 35.7, 12, -10, "EAST ASIA"],
+  [9, -0.1, 51.5, 0, 0, "EUROPE"], [10, 30.5, 50.4, 0, 0, "EUROPE"],
+  [11, 34.3, 31.4, -8, -6, "MIDDLE EAST"], [12, 31.1, 30, 6, 8, "AFRICA"],
+  [13, 90.4, 23.8, 0, 0, "SOUTH ASIA"], [14, 106.8, -6.6, 0, 0, "SE ASIA"],
+  [15, 18.4, -33.9, 0, 0, "AFRICA"],
 ];
 // Unnumbered dots for the brief stories that have a place.
 const BRIEF_PINS: [number, number, number, string][] = [
-  [15, -80, 27, "AMERICAS"], [16, 139, 36, "EAST ASIA"], [18, 45, 13, "MIDDLE EAST"],
-  [19, 2.3, 48.9, "EUROPE"], [20, 127, 37, "EAST ASIA"], [21, 88, 22.5, "SOUTH ASIA"],
-  [22, 85, 23, "SOUTH ASIA"], [23, 81, 27, "SOUTH ASIA"], [24, 6, 46, "EUROPE"],
-  [25, 151, -34, "OCEANIA"], [26, 145, -38, "OCEANIA"], [28, 39.5, 13.5, "AFRICA"],
-  [29, -0.2, 5.6, "AFRICA"], [30, -3.7, 40.4, "EUROPE"], [31, 2.3, 48.9, "EUROPE"],
-  [32, 11.3, 44.5, "EUROPE"], [33, -77, 39, "AMERICAS"],
-  [35, -77, 39, "AMERICAS"], [36, 30.5, 50.4, "EUROPE"],
-  [37, 31.2, 30, "AFRICA"], [38, -74, 40.7, "AMERICAS"],
-  [39, 6.1, 46.2, "EUROPE"],
+  [17, -77, 38.9, "N AMERICA"], [18, 139.7, 35.7, "EAST ASIA"],
+  [20, 45, 12.8, "MIDDLE EAST"], [21, 2.3, 48.9, "EUROPE"],
+  [22, 127, 37.5, "EAST ASIA"], [23, 88.4, 22.6, "SOUTH ASIA"],
+  [24, 85.3, 23.6, "SOUTH ASIA"], [25, 80.9, 26.8, "SOUTH ASIA"],
+  [26, 6.1, 46.2, "EUROPE"], [27, 151.2, -33.9, "OCEANIA"],
+  [28, 145, -37.8, "OCEANIA"], [29, 39.5, 13.5, "AFRICA"],
+  [30, -0.2, 5.6, "AFRICA"], [31, -3.7, 40.4, "EUROPE"],
+  [32, 2.3, 48.9, "EUROPE"], [33, 11.3, 44.5, "EUROPE"],
+  [34, -77, 38.9, "N AMERICA"], [36, -74, 40.7, "N AMERICA"],
+  [37, 6.1, 46.2, "EUROPE"], [38, 4.35, 50.8, "EUROPE"],
+  [39, 37.6, 55.8, "EUROPE"], [40, 7.75, 48.6, "EUROPE"],
+  [41, -77, 38.9, "N AMERICA"], [42, 125.8, 39, "EAST ASIA"],
+  [43, 4.35, 50.8, "EUROPE"], [44, 2.3, 48.9, "EUROPE"],
+  [45, 67.1, 24.9, "SOUTH ASIA"], [46, 77.2, 28.6, "SOUTH ASIA"],
+  [47, 50.2, 26.6, "MIDDLE EAST"], [49, -75.5, 10.4, "LATIN AMERICA"],
+  [50, -99.1, 19.4, "LATIN AMERICA"], [51, -51, -24.7, "LATIN AMERICA"],
+  [52, 21, 52.2, "EUROPE"],
 ];
 const TAG_COLORS: Record<Tag, RGB> = {
   REPORTED: [26, 82, 118],
@@ -739,22 +931,23 @@ const TAG_COLORS: Record<Tag, RGB> = {
   AHEAD: [97, 106, 107],
 };
 const SHORT_KICKER: Record<number, string> = {
-  4: "SEOUL - MARKETS", 5: "SEOUL - TRANSPORT", 6: "TOKYO - POLITICS",
-  7: "HONIARA - DIPLOMACY", 8: "BRUSSELS - SUMMIT", 9: "MOSCOW - DIPLOMACY",
-  10: "CANBERRA - RIGHTS", 11: "SHANGHAI - POLITICS", 12: "STRASBOURG - MIGRATION",
-  13: "WASHINGTON - ECONOMY",
+  4: "CANBERRA - ECONOMY", 5: "FLINDERS ISLAND - ENVIRONMENT",
+  6: "HONIARA - DIPLOMACY", 7: "SEOUL - TRANSPORT", 8: "TOKYO - POLITICS",
+  9: "LONDON - ENERGY", 10: "KYIV - WAR", 11: "GAZA CITY - WAR",
+  12: "GIZA - DISASTER", 13: "DHAKA - LABOUR", 14: "BOGOR - DISASTER",
+  15: "CAPE TOWN - JUSTICE",
 };
 
 // ---------- page composition ----------
 function drawLeadCard(cv: Canvas, x: number, y: number, s: Story, scene: (cv: Canvas, x: number, y: number, w: number, h: number) => void) {
   const W2 = 328;
-  const H2 = 330;
+  const H2 = 292;
   cv.rect(x, y, W2, H2, WHITE);
   cv.rect(x, y, W2, 4, REGION[s.region]);
-  scene(cv, x + 1, y + 5, W2 - 2, 181);
+  scene(cv, x + 1, y + 5, W2 - 2, 138);
   // Scenes must not spill below the illustration: repaint the text zone
-  // white (the rocket scene's Earth arc used to flood the whole card).
-  cv.rect(x + 1, y + 186, W2 - 2, H2 - 187, WHITE);
+  // white (a scene's Earth arc could otherwise flood the whole card).
+  cv.rect(x + 1, y + 143, W2 - 2, H2 - 144, WHITE);
   cv.rect(x, y, W2, 1, [180, 175, 160]);
   cv.rect(x, y + H2 - 1, W2, 1, [180, 175, 160]);
   cv.rect(x, y, 1, H2, [180, 175, 160]);
@@ -764,38 +957,43 @@ function drawLeadCard(cv: Canvas, x: number, y: number, s: Story, scene: (cv: Ca
   cv.ring(x + 20, y + 24, 12, WHITE);
   drawTextCentered(cv, x + 20, y + 18, 1, WHITE, String(s.n), true);
   // "Drawn scene" label, bottom-right of the illustration.
-  cv.rect(x + W2 - 79, y + 170, 74, 12, [17, 17, 17]);
-  drawText(cv, x + W2 - 75, y + 172, 1, WHITE, "DRAWN SCENE");
+  cv.rect(x + W2 - 79, y + 127, 74, 12, [17, 17, 17]);
+  drawText(cv, x + W2 - 75, y + 129, 1, WHITE, "DRAWN SCENE");
   // Kicker.
-  drawText(cv, x + 6, y + 192, 1, REGION[s.region], `${s.place} - ${s.field}`, true);
+  drawText(cv, x + 6, y + 150, 1, REGION[s.region], `${s.place} - ${s.field}`, true);
   // Headline, up to 3 lines at scale 2.
   const headLines = wrapText(s.head, W2 - 12, 2).slice(0, 3);
-  headLines.forEach((ln, i) => drawText(cv, x + 6, y + 208 + i * 16, 2, INK, ln, true));
-  // Summary, up to 5 lines at scale 1.
-  const sumLines = wrapText(s.sum, W2 - 12, 1).slice(0, 5);
-  sumLines.forEach((ln, i) => drawText(cv, x + 6, y + 260 + i * 11, 1, INK, ln));
+  headLines.forEach((ln, i) => drawText(cv, x + 6, y + 166 + i * 16, 2, INK, ln, true));
+  // Summary, up to 4 lines at scale 1.
+  const sumLines = wrapText(s.sum, W2 - 12, 1).slice(0, 4);
+  sumLines.forEach((ln, i) => drawText(cv, x + 6, y + 218 + i * 10, 1, INK, ln));
+  // Why it matters (the leaders carry one on every lead card).
+  if (s.why) {
+    const lw = drawText(cv, x + 6, y + 262, 1, RED, "WHY IT MATTERS", true);
+    drawText(cv, lw + 6, y + 262, 1, INK, s.why);
+  }
   // Footer: status tag + source.
-  const tw = drawTag(cv, x + 6, y + 318, s.tag, TAG_COLORS[s.tag]);
-  drawText(cv, x + 6 + tw + 6, y + 320, 1, GREY, s.src);
+  const tw = drawTag(cv, x + 6, y + 276, s.tag, TAG_COLORS[s.tag]);
+  drawText(cv, x + 6 + tw + 6, y + 278, 1, GREY, s.src);
 }
 function drawSmallCard(cv: Canvas, x: number, y: number, s: Story) {
-  const W2 = 196;
-  const H2 = 114;
+  const W2 = 245;
+  const H2 = 82;
   cv.rect(x, y, W2, H2, WHITE);
   cv.rect(x, y, W2, 1, [180, 175, 160]);
   cv.rect(x, y + H2 - 1, W2, 1, [180, 175, 160]);
   cv.rect(x, y, 1, H2, [180, 175, 160]);
   cv.rect(x + W2 - 1, y, 1, H2, [180, 175, 160]);
   cv.rect(x, y, W2, 4, REGION[s.region]);
-  drawIcon(cv, x + W2 - 26, y + 8, ICONS[s.n], REGION[s.region]);
-  drawText(cv, x + 6, y + 8, 1, REGION[s.region], `${s.n} ${SHORT_KICKER[s.n]}`, true);
-  // Headline wraps in the width left of the icon, at most 3 lines.
-  const headLines = wrapText(s.head, W2 - 12 - 28, 2).slice(0, 3);
-  headLines.forEach((ln, i) => drawText(cv, x + 6, y + 22 + i * 15, 2, INK, ln, true));
+  drawIcon(cv, x + W2 - 26, y + 7, ICONS[s.n], REGION[s.region]);
+  drawText(cv, x + 6, y + 7, 1, REGION[s.region], `${s.n} ${SHORT_KICKER[s.n]}`, true);
+  // Headline wraps in the width left of the icon, at most 2 lines.
+  const headLines = wrapText(s.head, W2 - 12 - 28, 2).slice(0, 2);
+  headLines.forEach((ln, i) => drawText(cv, x + 6, y + 19 + i * 15, 2, INK, ln, true));
   const sumLines = wrapText(s.sum, W2 - 12, 1).slice(0, 2);
-  sumLines.forEach((ln, i) => drawText(cv, x + 6, y + 70 + i * 9, 1, INK, ln));
-  const tw = drawTag(cv, x + 6, y + 94, s.tag, TAG_COLORS[s.tag]);
-  drawText(cv, x + 6 + tw + 6, y + 96, 1, GREY, s.src);
+  sumLines.forEach((ln, i) => drawText(cv, x + 6, y + 51 + i * 9, 1, INK, ln));
+  const tw = drawTag(cv, x + 6, y + 69, s.tag, TAG_COLORS[s.tag]);
+  drawText(cv, x + 6 + tw + 6, y + 71, 1, GREY, s.src);
 }
 function drawMap(cv: Canvas, x0: number, y0: number, w: number, h: number) {
   const toX = (lon: number) => x0 + ((lon + 180) / 360) * w;
@@ -825,85 +1023,82 @@ function drawMap(cv: Canvas, x0: number, y0: number, w: number, h: number) {
   }
 }
 function drawPage(cv: Canvas) {
-  // Top strip.
-  drawText(cv, 12, 4, 2, INK, "THE WORLD IN ONE DAY", true);
   const totalStories = LEADS.length + SMALL.length + BRIEFS.length;
-  drawTextCentered(cv, 512, 4, 2, RED, `${totalStories} STORIES - ${REGIONS.length} REGIONS - ONE DAY`, true);
-  drawText(cv, 1024 - 12 - textWidth("ALL TIMES UTC", 2), 4, 2, INK, "ALL TIMES UTC", true);
-  cv.hline(12, 24, 1000, INK);
+  // Black top bar with the counts (the leaders all lead with this).
+  cv.rect(0, 0, 1024, 22, BLACK);
+  drawText(cv, 12, 4, 2, WHITE, "THE WORLD IN ONE DAY", true);
+  drawTextCentered(cv, 512, 4, 2, [255, 120, 110], `${totalStories} STORIES - ${REGIONS.length} REGIONS - ${FIELD_LIST.length} FIELDS`, true);
+  drawText(cv, 1024 - 12 - textWidth("ALL FIRST REPORTED WED 25 NOV", 1), 8, 1, WHITE, "ALL FIRST REPORTED WED 25 NOV", true);
   // Giant date headline.
-  drawTextCentered(cv, 512, 30, 5, INK, "WEDNESDAY 25 NOVEMBER 2026", true);
-  // Red sub-headline.
-  drawTextCentered(cv, 512, 72, 2, RED, "Shenzhou-24 lifts off | Australia CPI 4.9% | Flinders fire: too late to leave", true);
-  // Region bar: 8 chips.
+  drawTextCentered(cv, 512, 27, 5, INK, "WEDNESDAY 25 NOVEMBER 2026", true);
+  // Red kicker with the three lead headlines.
+  drawTextCentered(cv, 512, 68, 2, RED, "Tariffs on 14 economies | Kospi -6.2% | Pakistan's first astronaut docks", true);
+  // Region tally strip: 10 segments.
   REGIONS.forEach(([name, count], i) => {
-    const cx = 2 + i * 128;
-    const label = name === "MIDDLE EAST" ? "MID EAST" : name;
-    cv.rect(cx, 92, 124, 44, REGION[name]);
-    drawTextCentered(cv, cx + 62, 97, 2, WHITE, label, true);
-    drawTextCentered(cv, cx + 62, 116, 3, WHITE, String(count), true);
+    const cx = 12 + i * 100;
+    cv.rect(cx, 88, 98, 20, REGION[name]);
+    drawTextCentered(cv, cx + 49, 94, 1, WHITE, `${REGION_SHORT[name]} ${count}`, true);
   });
+  // Field taxonomy line, computed from the data.
+  drawTextCentered(cv, 512, 113, 1, INK, FIELDS_LINE);
+  // Stat strip: six giant numbers.
+  cv.hline(12, 125, 1000, INK);
+  STATS.forEach(([big, label], i) => {
+    const sx = 12 + i * 166;
+    drawText(cv, sx + 2, 130, 3, RED, big, true);
+    wrapText(label, 158, 1).slice(0, 2).forEach((ln, j) =>
+      drawText(cv, sx + 2, 154 + j * 9, 1, INK, ln)
+    );
+  });
+  cv.hline(12, 174, 1000, INK);
   // UTC timeline strip (ticks evenly spaced, in order, not to scale).
-  // No title text: the top strip already says ALL TIMES UTC, and a title
-  // here collided with the first time label.
-  cv.hline(12, 156, 1000, INK);
   TIMELINE.forEach(([t, label], i) => {
     const tx = Math.round(12 + (i * 1000) / (TIMELINE.length - 1));
-    cv.vline(tx, 152, 9, INK);
-    cv.circle(tx, 156, 3, RED);
     const tw1 = textWidth(t, 1);
-    drawText(cv, Math.max(12, Math.min(1012 - tw1, tx - Math.round(tw1 / 2))), 142, 1, RED, t, true);
+    drawText(cv, Math.max(12, Math.min(1012 - tw1, tx - Math.round(tw1 / 2))), 180, 1, RED, t, true);
+    cv.vline(tx, 192, 9, INK);
+    cv.circle(tx, 196, 3, RED);
     const tw2 = textWidth(label, 1);
-    drawText(cv, Math.max(12, Math.min(1012 - tw2, tx - Math.round(tw2 / 2))), 164, 1, INK, label);
+    drawText(cv, Math.max(12, Math.min(1012 - tw2, tx - Math.round(tw2 / 2))), 204, 1, INK, label);
   });
-  // Three lead cards.
-  const scenes = [drawRocketScene, drawFireScene, drawChartScene];
-  LEADS.forEach((s, i) => drawLeadCard(cv, 12 + i * 336, 176, s, scenes[i]));
-  // Ten small cards: 5 columns x 2 rows.
+  // Three lead cards with the new drawn scenes.
+  const scenes = [drawShipScene, drawCrashScene, drawStationScene];
+  LEADS.forEach((s, i) => drawLeadCard(cv, 12 + i * 336, 218, s, scenes[i]));
+  // Twelve small cards: 4 columns x 3 rows.
   SMALL.forEach((s, i) => {
-    const col = i % 5;
-    const row = Math.floor(i / 5);
-    drawSmallCard(cv, 12 + col * 201, 514 + row * 122, s);
+    const col = i % 4;
+    const row = Math.floor(i / 4);
+    drawSmallCard(cv, 12 + col * 251, 518 + row * 88, s);
   });
-  // Bottom section.
-  // Map (left).
-  drawText(cv, 12, 762, 1, INK, "WHERE IT HAPPENED - PINS ARE STORY NUMBERS", true);
-  drawMap(cv, 12, 780, 296, 136);
-  drawText(cv, 12, 922, 1, GREY, "REPORTED: carried by a named outlet");
-  drawText(cv, 12, 932, 1, GREY, "ONGOING: still unfolding");
-  drawText(cv, 12, 942, 1, GREY, "AHEAD: due later today");
-  // Also-on list (middle, two columns; round 2: 13 rows at a tighter
-  // pitch so the extra verified briefs fit above the footer).
-  drawText(cv, 316, 762, 1, INK, `ALSO ON WEDNESDAY 25 NOVEMBER 2026 - ${BRIEFS.length} MORE STORIES`, true);
-  const briefRows = Math.ceil(BRIEFS.length / 2);
+  // Bottom section: pin map (left) and the ALSO briefs in 3 columns.
+  drawText(cv, 12, 782, 1, INK, "WHERE IT HAPPENED - PINS ARE STORY NUMBERS", true);
+  drawMap(cv, 12, 796, 296, 120);
+  drawText(cv, 12, 922, 1, GREY, "Dots: brief stories 16-52 with a place");
+  drawText(cv, 12, 932, 1, GREY, "Tags: REPORTED named outlet - CONFIRMED official");
+  drawText(cv, 316, 782, 1, INK, `ALSO ON WEDNESDAY 25 NOVEMBER - ${BRIEFS.length} MORE STORIES`, true);
+  const perCol = Math.ceil(BRIEFS.length / 3);
   BRIEFS.forEach((b, i) => {
-    const col = i < briefRows ? 0 : 1;
-    const row = i < briefRows ? i : i - briefRows;
-    const bx = 316 + col * 220;
-    const by = 780 + row * 12;
+    const col = Math.floor(i / perCol);
+    const row = i % perCol;
+    const bx = 316 + col * 236;
+    const by = 796 + row * 11;
     drawText(cv, bx, by, 1, RED, String(b.n), true);
     drawText(cv, bx + 16, by, 1, INK, b.text);
   });
-  // The day in numbers (right).
-  drawText(cv, 756, 762, 1, INK, "THE DAY IN NUMBERS", true);
-  NUMBERS.forEach(([big, label], i) => {
-    const ny = 782 + i * 33;
-    drawText(cv, 756, ny, 3, RED, big, true);
-    drawText(cv, 756, ny + 24, 1, INK, label);
-  });
-  // Date check + sources + footnote, wrapped and stacked dynamically.
-  let fy = 954;
-  for (const ln of wrapText(DATE_CHECK, 1000, 1)) {
-    drawText(cv, 12, fy, 1, INK, ln);
-    fy += 10;
-  }
-  fy += 4;
+  // Footer: red-bordered DATE CHECK box, then the sources line.
+  const dcLines = [...wrapText(DATE_CHECK, 976, 1), DATE_LINE];
+  const boxTop = 944;
+  const boxBottom = boxTop + 6 + dcLines.length * 9 + 3;
+  cv.rect(12, boxTop, 1000, 1, RED);
+  cv.rect(12, boxBottom, 1000, 1, RED);
+  cv.rect(12, boxTop, 1, boxBottom - boxTop, RED);
+  cv.rect(1011, boxTop, 1, boxBottom - boxTop, RED);
+  dcLines.forEach((ln, i) => drawText(cv, 18, boxTop + 5 + i * 9, 1, INK, ln));
+  let fy = boxBottom + 5;
   for (const ln of wrapText(SOURCES, 1000, 1)) {
     drawText(cv, 12, fy, 1, GREY, ln);
-    fy += 10;
+    fy += 9;
   }
-  fy += 4;
-  drawText(cv, 12, fy, 1, GREY, FOOTNOTE);
 }
 
 function main() {
