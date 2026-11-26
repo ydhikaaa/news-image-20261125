@@ -318,28 +318,46 @@ function drawTextCentered(cv: Canvas, cx: number, y: number, scale: number, c: R
   drawText(cv, Math.round(cx - textWidth(s, scale) / 2), y, scale, c, s, bold);
 }
 // Greedy word wrap; returns lines that fit maxW px at the given scale.
+// Break opportunities are spaces and the point just after a hyphen inside
+// a word, so "Australia-Solomons" breaks as "Australia-" / "Solomons".
+// Round 1 hard-split such a word mid-word with no hyphen, which garbled
+// card 7 ("Australia-Sol / omons sign"); a residual hard split now always
+// leaves a trailing hyphen on the broken piece.
 function wrapText(s: string, maxW: number, scale: number): string[] {
-  const words = s.split(" ");
+  const tokens: { text: string; spaceBefore: boolean }[] = [];
+  for (const word of s.split(" ")) {
+    const parts = word.split(/(?<=-)/).filter((p) => p !== "");
+    parts.forEach((p, i) =>
+      tokens.push({ text: p, spaceBefore: i === 0 && tokens.length > 0 })
+    );
+  }
   const lines: string[] = [];
   let cur = "";
-  for (const w of words) {
-    const test = cur === "" ? w : cur + " " + w;
-    if (textWidth(test, scale) <= maxW) {
-      cur = test;
-    } else {
-      if (cur !== "") lines.push(cur);
-      // A single over-long word: hard-split it.
-      if (textWidth(w, scale) > maxW) {
-        let part = "";
-        for (const ch of w) {
-          if (textWidth(part + ch, scale) > maxW) {
-            lines.push(part);
-            part = ch;
-          } else part += ch;
-        }
-        cur = part;
-      } else cur = w;
+  const fits = (t: string) => textWidth(t, scale) <= maxW;
+  for (const tok of tokens) {
+    const cand = cur === "" ? tok.text : cur + (tok.spaceBefore ? " " : "") + tok.text;
+    if (fits(cand)) {
+      cur = cand;
+      continue;
     }
+    if (cur !== "") {
+      lines.push(cur);
+      cur = "";
+    }
+    // The token starts a fresh line; hard-split only if it still
+    // overflows on its own, marking each break with a hyphen.
+    let rest = tok.text;
+    while (!fits(rest)) {
+      let part = "";
+      for (const ch of rest) {
+        if (!fits(part + ch + "-")) break;
+        part += ch;
+      }
+      if (part === "") part = rest.slice(0, 1); // never stall
+      lines.push(part + "-");
+      rest = rest.slice(part.length);
+    }
+    cur = rest;
   }
   if (cur !== "") lines.push(cur);
   return lines;
@@ -370,6 +388,9 @@ function insidePoly(px: number, py: number, poly: [number, number][]): boolean {
 // CONFIRMED = officially confirmed, ONGOING = still unfolding, AHEAD = due
 // later today. Two stories the leaders ran were checked and DROPPED:
 // Yongbyon expansion (reported 22-23 Nov) and the FIFA files (AP 24 Nov).
+// Round 2 (26 Nov): briefs 35-39 added after re-verification against
+// Reuters, Ukrinform, AP, NBC and FIDE reports dated 25 Nov 2026; three
+// more leader stories were checked and DROPPED (see DATE CHECK below).
 type Tag = "REPORTED" | "CONFIRMED" | "ONGOING" | "AHEAD";
 interface Story {
   n: number;
@@ -470,46 +491,53 @@ const BRIEFS: Brief[] = [
   { n: 16, text: "Japan service prices, 36-yr high" },
   { n: 17, text: "Dollar steadies; gold $3,544" },
   { n: 18, text: "Houthis 60 km from Aden" },
-  { n: 19, text: "Sarkozy trial in Libya case - BBC" },
+  { n: 19, text: "Sarkozy Libya-case trial - BBC" },
   { n: 20, text: "Korea crypto bill, 20% cap - FSC" },
-  { n: 21, text: "Kolkata infant refused certificate" },
+  { n: 21, text: "Kolkata infant certificate row" },
   { n: 22, text: "Jharkhand chief justice - Hindu" },
   { n: 23, text: "Samajwadi names 5 UP candidates" },
   { n: 24, text: "UN business forum, Geneva - UN" },
-  { n: 25, text: "Jury retires in murder trial - ABC" },
+  { n: 25, text: "Murder-trial jury retires - ABC" },
   { n: 26, text: "Netball stars oppose rule change" },
   { n: 27, text: "Cekaj v Siniakov, game two - ABC" },
   { n: 28, text: "Tigray opens 16 Days - TIMRRA" },
   { n: 29, text: "Germany-Africa summit ends" },
   { n: 30, text: "Spain snap-poll, final week" },
-  { n: 31, text: "PSG host Roma in Champions League" },
+  { n: 31, text: "PSG host Roma, Champions League" },
   { n: 32, text: "Davis Cup: Italy v S Korea - ITF" },
   { n: 33, text: "Fed Beige Book released - Fed" },
   { n: 34, text: "Kutryk's daughter, from the ISS" },
+  { n: 35, text: "US tariffs on 14 partners - USTR" },
+  { n: 36, text: "Kyiv downs 88 of 112 drones" },
+  { n: 37, text: "Cairo tanker fire kills 31 - AP" },
+  { n: 38, text: "Macy's parade moved to Saturday" },
+  { n: 39, text: "Gukesh draws game two - FIDE" },
 ];
 const TIMELINE: [string, string][] = [
   ["00:18", "Shenzhou-24"],
   ["00:30", "Aus CPI out"],
+  ["07:00", "Kyiv drones"],
   ["11:00", "EU migration"],
   ["13:30", "US data pile"],
   ["17:00", "EU-Balkans"],
   ["19:00", "Beige Book"],
   ["21:00", "Trump-Rutte"],
 ];
-const NUMBERS: [string, string, string][] = [
-  ["4.9%", "Australia Oct CPI,", "a three-year high"],
-  ["3,000 ha", "Flinders Island", "fire area"],
-  ["2,212", "Seoul Metro jobs", "saved from cuts"],
-  ["16", "days of activism", "starting today"],
+const NUMBERS: [string, string][] = [
+  ["4.9%", "Australia Oct CPI, a three-year high"],
+  ["88 of 112", "drones downed over Kyiv"],
+  ["31", "killed in the Cairo tanker fire"],
+  ["3,000 ha", "burning on Flinders Island"],
+  ["2,212", "Seoul Metro jobs saved from cuts"],
 ];
 const REGIONS: [string, number][] = [
-  ["EAST ASIA", 7], ["OCEANIA", 6], ["SOUTH ASIA", 3], ["EUROPE", 8],
-  ["AMERICAS", 3], ["MIDDLE EAST", 1], ["AFRICA", 2], ["WORLD", 4],
+  ["EAST ASIA", 7], ["OCEANIA", 6], ["SOUTH ASIA", 3], ["EUROPE", 10],
+  ["AMERICAS", 5], ["MIDDLE EAST", 1], ["AFRICA", 3], ["WORLD", 4],
 ];
 const DATE_CHECK =
-  "DATE CHECK - Left out because they happened on 24 November: COP31 closes with no deal; Houthi drone hits Riyadh tower, 11 hurt; Huawei guilty in US trade-secrets trial; Israel's Democrats halt coalition talks; White House turkey pardon; Nikkei +3.9% to 58,644; Zaporizhzhia flats strike, 2 dead; Cartagena supermarket hostages; CAS gives AFCON title to Senegal; Bank of Korea rate call.";
+  "DATE CHECK - Left out: 24 November stories - COP31 closes with no deal; Houthi drone hits Riyadh tower; Huawei guilty in US trade-secrets trial; Nikkei +3.9% to 58,644; Zaporizhzhia flats strike, 2 dead; CAS gives AFCON title to Senegal. Also checked and left out: EU budget summit (leaders sat 26 Nov; 25 Nov was only the preview); a Sydney 43.9C heat claim (the Bureau recorded 23C); a Nepal runway scare (no dated source found).";
 const SOURCES =
-  "Sources: Reuters - Yonhap - ABC News - Nikkei Asia - The Hindu - European Council - Kremlin - European Parliament - ABS - UN Women - BBC - France 24 - Federal Reserve - UEFA - ITF - SpaceQ";
+  "Sources: Reuters - Ukrinform - AP - NBC - USTR - Yonhap - ABC News - Nikkei Asia - The Hindu - European Council - Kremlin - European Parliament - ABS - UN Women - BBC - France 24 - Federal Reserve - UEFA - ITF - FIDE - SpaceQ";
 const FOOTNOTE =
   "Every story dated Wednesday 25 November 2026 (UTC). Illustrations are drawings, not photographs.";
 
@@ -700,6 +728,9 @@ const BRIEF_PINS: [number, number, number, string][] = [
   [25, 151, -34, "OCEANIA"], [26, 145, -38, "OCEANIA"], [28, 39.5, 13.5, "AFRICA"],
   [29, -0.2, 5.6, "AFRICA"], [30, -3.7, 40.4, "EUROPE"], [31, 2.3, 48.9, "EUROPE"],
   [32, 11.3, 44.5, "EUROPE"], [33, -77, 39, "AMERICAS"],
+  [35, -77, 39, "AMERICAS"], [36, 30.5, 50.4, "EUROPE"],
+  [37, 31.2, 30, "AFRICA"], [38, -74, 40.7, "AMERICAS"],
+  [39, 6.1, 46.2, "EUROPE"],
 ];
 const TAG_COLORS: Record<Tag, RGB> = {
   REPORTED: [26, 82, 118],
@@ -796,7 +827,8 @@ function drawMap(cv: Canvas, x0: number, y0: number, w: number, h: number) {
 function drawPage(cv: Canvas) {
   // Top strip.
   drawText(cv, 12, 4, 2, INK, "THE WORLD IN ONE DAY", true);
-  drawTextCentered(cv, 512, 4, 2, RED, "34 STORIES - 8 REGIONS - ONE DAY", true);
+  const totalStories = LEADS.length + SMALL.length + BRIEFS.length;
+  drawTextCentered(cv, 512, 4, 2, RED, `${totalStories} STORIES - ${REGIONS.length} REGIONS - ONE DAY`, true);
   drawText(cv, 1024 - 12 - textWidth("ALL TIMES UTC", 2), 4, 2, INK, "ALL TIMES UTC", true);
   cv.hline(12, 24, 1000, INK);
   // Giant date headline.
@@ -840,23 +872,24 @@ function drawPage(cv: Canvas) {
   drawText(cv, 12, 922, 1, GREY, "REPORTED: carried by a named outlet");
   drawText(cv, 12, 932, 1, GREY, "ONGOING: still unfolding");
   drawText(cv, 12, 942, 1, GREY, "AHEAD: due later today");
-  // Also-on list (middle, two columns).
-  drawText(cv, 316, 762, 1, INK, "ALSO ON WEDNESDAY 25 NOVEMBER 2026 - 21 MORE STORIES", true);
+  // Also-on list (middle, two columns; round 2: 13 rows at a tighter
+  // pitch so the extra verified briefs fit above the footer).
+  drawText(cv, 316, 762, 1, INK, `ALSO ON WEDNESDAY 25 NOVEMBER 2026 - ${BRIEFS.length} MORE STORIES`, true);
+  const briefRows = Math.ceil(BRIEFS.length / 2);
   BRIEFS.forEach((b, i) => {
-    const col = i < 11 ? 0 : 1;
-    const row = i < 11 ? i : i - 11;
+    const col = i < briefRows ? 0 : 1;
+    const row = i < briefRows ? i : i - briefRows;
     const bx = 316 + col * 220;
-    const by = 780 + row * 13;
+    const by = 780 + row * 12;
     drawText(cv, bx, by, 1, RED, String(b.n), true);
     drawText(cv, bx + 16, by, 1, INK, b.text);
   });
   // The day in numbers (right).
   drawText(cv, 756, 762, 1, INK, "THE DAY IN NUMBERS", true);
-  NUMBERS.forEach(([big, l1, l2], i) => {
-    const ny = 782 + i * 42;
+  NUMBERS.forEach(([big, label], i) => {
+    const ny = 782 + i * 33;
     drawText(cv, 756, ny, 3, RED, big, true);
-    drawText(cv, 756, ny + 24, 1, INK, l1);
-    drawText(cv, 756, ny + 33, 1, INK, l2);
+    drawText(cv, 756, ny + 24, 1, INK, label);
   });
   // Date check + sources + footnote, wrapped and stacked dynamically.
   let fy = 954;
